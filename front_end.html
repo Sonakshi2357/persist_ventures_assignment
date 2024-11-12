@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Image Classification with TensorFlow.js</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    input[type="file"] {
+      margin: 20px;
+    }
+    #image {
+      max-width: 500px;
+      margin-top: 20px;
+    }
+    #result {
+      font-size: 24px;
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Image Classification with TensorFlow.js</h1>
+  
+  <!-- File input for uploading image -->
+  <input type="file" id="fileInput" accept="image/*">
+  <br>
+
+  <!-- Image preview -->
+  <img id="image" src="" alt="Uploaded Image" style="display: none;">
+  
+  <!-- Area to display result -->
+  <div id="result"></div>
+
+  <script>
+    // Load pre-trained model (MobileNet in this case)
+    async function loadModel() {
+      const model = await tf.loadLayersModel('https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet');
+      return model;
+    }
+
+    // Pre-process the image and predict
+    async function classifyImage() {
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        alert("Please upload an image first.");
+        return;
+      }
+
+      // Display the image
+      const imgElement = document.getElementById('image');
+      imgElement.src = URL.createObjectURL(file);
+      imgElement.style.display = 'block';
+
+      // Load the model and classify the image
+      const model = await loadModel();
+      const image = await tf.browser.fromPixels(imgElement);
+      
+      // Resize image to meet MobileNet's input size (224x224)
+      const resizedImage = tf.image.resizeBilinear(image, [224, 224]);
+      const tensor = resizedImage.expandDims(0).toFloat().div(tf.scalar(255));
+
+      // Make prediction
+      const predictions = await model.classify(tensor);
+
+      // Display the results
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = `Prediction: ${predictions[0].className} <br> Confidence: ${(predictions[0].probability * 100).toFixed(2)}%`;
+    }
+
+    // Event listener for file input change
+    document.getElementById('fileInput').addEventListener('change', classifyImage);
+  </script>
+</body>
+</html>
